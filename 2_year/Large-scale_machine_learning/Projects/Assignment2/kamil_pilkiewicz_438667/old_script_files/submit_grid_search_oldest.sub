@@ -1,0 +1,32 @@
+#!/bin/bash -l
+#SBATCH --job-name=submit_grid_search
+#SBATCH --nodes=2
+#SBATCH --gpus-per-node=1
+#SBATCH --mem=125GB
+#SBATCH --cpus-per-gpu=8
+#SBATCH --time=00:30:00 
+#SBATCH --account=plgpkattenion-gpu-a100
+#SBATCH --partition=plgrid-gpu-a100
+#SBATCH --array=0-2
+#SBATCH --output="logs/%x/%j.out"
+#SBATCH --error="logs/%x/%j.err"
+
+cd $SLURM_SUBMIT_DIR
+
+module purge
+module load Python/3.10.4
+
+source venv/bin/activate
+
+echo "CUDA visible devices: $CUDA_VISIBLE_DEVICES"
+
+# I use wandb, but it fails to get access to gpu monitoring information.
+# It seems that changing tmp folder to local helps.
+export TMPDIR=$SCRATCH/tmp
+
+LR_LIST=(1e-2 1e-3 1e-4)
+LR=${LR_LIST[$SLURM_ARRAY_TASK_ID]}
+
+# Default: n_layers=4, dmodel=256, n_heads=4, batch_size=64, n_training_steps=1000, 
+# learning_rate=1e-4, dropout=0.0, sequence_length=256
+torchrun --nnodes=2 --nproc_per_node=1 main6.py --batch_size 256 --n_training_steps 4600 --learning_rate LR

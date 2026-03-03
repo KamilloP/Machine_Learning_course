@@ -1,0 +1,61 @@
+- hosts: nfs_server
+  become: true
+  tasks:
+    - name: Install NFS server
+      apt:
+        name: nfs-kernel-server
+        state: present
+        update_cache: yes
+
+    - name: Create export directory
+      file:
+        path: /home/nfs
+        state: directory
+        mode: '0777'
+
+    - name: Configure exports
+      copy:
+        dest: /etc/exports
+        content: |
+          /home/nfs *(rw,sync,no_subtree_check,no_root_squash)
+      notify: Reload exports
+
+    - name: Ensure services running
+      systemd:
+        name: nfs-server
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload exports
+      command: exportfs -ra
+
+
+- hosts: nfs_clients
+  become: true
+  tasks:
+    - name: Install NFS client
+      apt:
+        name: nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Create mount directory
+      file:
+        path: /home/nfs
+        state: directory
+        mode: '0777'
+
+    - name: Unmount if stuck
+      mount:
+        path: /home/nfs
+        state: absent
+      ignore_errors: yes
+
+    - name: Mount NFS (PRIVATE IP)
+      mount:
+        src: "{{ nfs_server_private_ip }}:/home/nfs"
+        path: /home/nfs
+        fstype: nfs4
+        opts: _netdev,hard,intr,timeo=600,retrans=5
+        state: mounted

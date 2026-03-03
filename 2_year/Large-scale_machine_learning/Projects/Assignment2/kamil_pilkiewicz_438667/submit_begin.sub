@@ -1,0 +1,26 @@
+#!/bin/bash -l
+#SBATCH --job-name=submit_begin_job
+#SBATCH --gres=gpu:1
+#SBATCH --mem=125GB
+#SBATCH --cpus-per-gpu=8
+#SBATCH --time=00:05:00 
+#SBATCH --account=plgpkattenion-gpu-a100
+#SBATCH --partition=plgrid-gpu-a100
+#SBATCH --output="logs/%x/%x_%j.out"
+#SBATCH --error="logs/%x/%x_%j.err"
+## For cpu would also have to define --ntasks-per-node=1  -N 1
+
+## change to sbatch working directory
+cd $SLURM_SUBMIT_DIR
+
+ls >> test_file.txt
+
+## load an application using Modules
+module purge
+module load Python
+
+
+source venv/bin/activate
+
+## run a binary with an input file
+srun python main_original.py

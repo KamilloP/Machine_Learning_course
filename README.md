@@ -4,7 +4,7 @@ This repository contains selected projects, homework assignments, and laboratory
 
 The main goal of this repository is to summarize, revise, and consolidate knowledge gained during Machine Learning courses.
 
-I will gradually add more materials. Some content may appear over time, as I did not systematically upload everything during my first year.
+I will gradually add more materials. Some content may appear over time, especially considering first year.
 
 ## Repository structure
 

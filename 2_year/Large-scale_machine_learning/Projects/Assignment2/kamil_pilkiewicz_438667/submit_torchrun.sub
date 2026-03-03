@@ -1,0 +1,21 @@
+#!/bin/bash -l
+#SBATCH --job-name=submit_torchrun
+#SBATCH --gres=gpu:1
+#SBATCH --mem=125GB
+#SBATCH --cpus-per-gpu=8
+#SBATCH --time=00:05:00 
+#SBATCH --account=plgpkattenion-gpu-a100
+#SBATCH --partition=plgrid-gpu-a100
+#SBATCH --output="logs/%x/%x_%j.out"
+#SBATCH --error="logs/%x/%x_%j.err"
+
+cd $SLURM_SUBMIT_DIR
+
+module purge
+module load Python/3.10.4
+
+source venv/bin/activate
+
+echo "CUDA visible devices: $CUDA_VISIBLE_DEVICES"
+
+torchrun --nproc_per_node=1 main2.py 4 256 4 64 1000

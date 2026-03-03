@@ -1,0 +1,4 @@
+butterfly cat doctor dog engineer pianist rat
+["pianist", [0], [1]]
+["doctor", ["dog", [0], [0]], [1]]
+["pianist", [0], [1]]

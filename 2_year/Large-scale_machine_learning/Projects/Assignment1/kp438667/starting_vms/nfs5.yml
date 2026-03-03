@@ -1,0 +1,75 @@
+---
+- hosts: nfs_server
+  become: yes
+  tasks:
+    - name: Install NFS server packages
+      apt:
+        name:
+          - nfs-kernel-server
+          - rpcbind
+        state: latest
+        update_cache: yes
+
+    - name: Create export directory
+      file:
+        path: /home/nfs
+        state: directory
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+        mode: '0777'
+
+    - name: Ensure rpcbind service is enabled and running
+      service:
+        name: rpcbind
+        state: started
+        enabled: yes
+
+    - name: Ensure nfs-server service is enabled and running
+      service:
+        name: nfs-server
+        state: started
+        enabled: yes
+
+    - name: Configure /etc/exports
+      copy:
+        dest: /etc/exports
+        content: "/home/nfs 10.0.0.0/8(rw,sync,no_subtree_check,no_root_squash)\n"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply NFS export configuration
+      command: exportfs -ra
+
+- hosts: nfs_clients
+  become: yes
+  tasks:
+    - name: Install NFS client packages
+      apt:
+        name:
+          - nfs-common
+          - rpcbind
+        state: latest
+        update_cache: yes
+
+    - name: Create mount directory
+      file:
+        path: /home/nfs
+        state: directory
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+        mode: '0777'
+
+    - name: Ensure rpcbind service is enabled and running
+      service:
+        name: rpcbind
+        state: started
+        enabled: yes
+
+    - name: Mount NFS share
+      ansible.posix.mount:
+        path: /home/nfs
+        src: "{{ nfs_server }}:/home/nfs"
+        fstype: nfs4
+        opts: defaults
+        state: mounted

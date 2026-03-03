@@ -1,0 +1,37 @@
+#!/bin/bash
+#SBATCH --job-name=chinchilla_grid
+#SBATCH --account=plgpkattenion-gpu-a100
+#SBATCH --partition=plgrid-gpu-a100
+#SBATCH --array=0-2
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=00:10:00
+#SBATCH --output=logs/%A_%a.out
+#SBATCH --error=logs/%A_%a.err
+
+cd $SLURM_SUBMIT_DIR
+export TMPDIR=$SCRATCH/tmp
+
+source /net/tscratch/people/plgkp438667/code/venv/bin/activate
+
+export MASTER_ADDR=$(scontrol show hostnames "$SLURM_NODELIST" | head -n 1)
+export MASTER_PORT=$((29500 + SLURM_ARRAY_TASK_ID))
+
+LR_LIST=("1e-2" "1e-3" "1e-4")
+LR=${LR_LIST[$SLURM_ARRAY_TASK_ID]}
+
+echo "MASTER_ADDR=$MASTER_ADDR"
+echo "MASTER_PORT=$MASTER_PORT"
+echo "LR=$LR"
+
+
+srun torchrun \
+  --nnodes=2 \
+  --nproc_per_node=1 \
+  --rdzv-backend=c10d \
+  --rdzv-endpoint="${MASTER_ADDR}:${MASTER_PORT}" \
+  --rdzv-id="${SLURM_JOB_ID}" \
+  main6.py \
+  --batch_size 256 --n_training_steps 4600 --learning_rate $LR
